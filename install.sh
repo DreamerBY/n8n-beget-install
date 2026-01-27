@@ -55,7 +55,7 @@ if [[ -d "$INSTALL_DIR" ]]; then
 fi
 
 echo "📥 Клонируем проект с GitHub..."
-git clone https://github.com/kalininlive/n8n-beget-install.git "$INSTALL_DIR"
+git clone https://github.com/DreamerBY/n8n-beget-install.git "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 ### 4. Генерация .env (n8n v2+)
