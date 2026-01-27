@@ -58,7 +58,10 @@ echo "📥 Клонируем проект с GitHub..."
 git clone https://github.com/DreamerBY/n8n-beget-install.git "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-### 4. Генерация .env (n8n v2+)
+### 4. Генерация .env
+# Получаем GID группы docker (чтобы n8n мог управлять докером)
+DOCKER_GID=$(getent group docker | cut -d: -f3 || echo 999)
+
 cat > ".env" <<EOF
 # === Domain / SSL ===
 DOMAIN=${DOMAIN}
@@ -69,24 +72,22 @@ POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
 # === n8n core ===
 N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-NODES_EXCLUDE=[]
-N8N_RESTRICT_FILE_ACCESS_TO=/data
-
-# === n8n v2 security defaults ===
-N8N_RUNNERS_ENABLED=true
-N8N_BLOCK_ENV_ACCESS_IN_NODE=true
-N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
+GENERIC_TIMEZONE=Asia/Yekaterinburg
+NODE_ENV=production
 N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+N8N_RUNNERS_ENABLED=true
+N8N_VERSION=1.93.1
+DOCKER_GID=${DOCKER_GID}
 
 # === Telegram ===
 TG_BOT_TOKEN=${TG_BOT_TOKEN}
 TG_USER_ID=${TG_USER_ID}
 
-# === Proxy ===
-HTTP_PROXY=${HTTP_PROXY}
-HTTPS_PROXY=${HTTPS_PROXY}
+# === Proxy (если есть) ===
+PROXY_URL=${HTTP_PROXY}
 NO_PROXY=${NO_PROXY}
 EOF
+
 
 chmod 600 .env
 
