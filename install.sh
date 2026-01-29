@@ -119,9 +119,17 @@ EOF
 
 chmod +x shims/*
 
-### 7. Запуск
+### 7. Запуск (ИЗМЕНЕННЫЙ БЛОК)
 echo "🚀 Запуск docker compose..."
 docker compose up -d --build
+
+# --- ДОБАВИТЬ ВОТ ЭТО ---
+echo "⏳ Ждем 15 секунд, пока n8n проснется..."
+sleep 15
+echo "🔄 Обновляем Traefik, чтобы он увидел n8n..."
+docker compose restart n8n-traefik
+# ------------------------
+
 
 ### 8. Telegram notify
 curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
