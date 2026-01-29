@@ -10,7 +10,7 @@ if (( EUID != 0 )); then
 fi
 
 clear
-echo "🌐 Автоматическая установка n8n v2+"
+echo "🌐 Автоматическая установка n8n"
 echo "----------------------------------------"
 
 ### 1. Ввод переменных
@@ -39,7 +39,6 @@ NO_PROXY="localhost,127.0.0.1,::1,postgres,redis,traefik,n8n-app,n8n-worker"
 
 if [[ "$USE_PROXY" =~ ^[Yy]$ ]]; then
   read -p "Вставь прокси (формат http://user:pass@ip:port): " PROXY_INPUT
-  # Если пользователь забыл http://, добавим его сами для страховки
   if [[ "$PROXY_INPUT" != http* ]]; then
      HTTP_PROXY="http://$PROXY_INPUT"
      HTTPS_PROXY="http://$PROXY_INPUT"
@@ -57,13 +56,20 @@ fi
 
 ### 3. Клонирование проекта
 if [[ -d "$INSTALL_DIR" ]]; then
-  echo "❌ $INSTALL_DIR уже существует. Удалите вручную или выполните update."
-  exit 1
+  echo "⚠️ Папка установки уже существует. Пересобираем..."
+  # Если переустанавливаем поверх - почистим старый акме файл на всякий случай, чтобы права обновить
+  rm -f "$INSTALL_DIR/letsencrypt/acme.json"
 fi
 
-echo "📥 Клонируем проект с GitHub..."
-git clone https://github.com/DreamerBY/n8n-beget-install.git "$INSTALL_DIR"
+if [ ! -d "$INSTALL_DIR" ]; then
+  echo "📥 Клонируем проект с GitHub..."
+  git clone https://github.com/DreamerBY/n8n-beget-install.git "$INSTALL_DIR"
+fi
+
 cd "$INSTALL_DIR"
+
+# Если папка была, сделаем pull свежих изменений
+git pull origin main
 
 ### 4. Генерация .env
 DOCKER_GID=$(getent group docker | cut -d: -f3 || echo 999)
@@ -82,7 +88,7 @@ GENERIC_TIMEZONE=Asia/Yekaterinburg
 NODE_ENV=production
 N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
 N8N_RUNNERS_ENABLED=true
-N8N_VERSION=1.93.1
+N8N_VERSION=1.121.2
 DOCKER_GID=${DOCKER_GID}
 
 # === Telegram ===
@@ -99,7 +105,9 @@ chmod 600 .env
 ### 5. Директории
 mkdir -p data logs backups letsencrypt shims traefik_dynamic
 touch logs/backup.log
-# Создаем файл сертификатов заранее, чтобы Traefik не ругался на права
+
+# ВАЖНО: Создаем файл сертификатов заранее с правильными правами
+# Traefik не умеет сам выставлять 600 при создании через Docker volume bind
 touch letsencrypt/acme.json
 chmod 600 letsencrypt/acme.json
 
@@ -128,18 +136,19 @@ chmod +x shims/*
 
 ### 7. Запуск
 echo "🚀 Запуск docker compose..."
+docker compose down --remove-orphans || true
 docker compose up -d --build
 
-echo "⏳ Ждем 20 секунд, пока n8n проснется (чтобы не было 404)..."
+echo "⏳ Ждем 20 секунд инициализации n8n..."
 sleep 20
-echo "🔄 Пинаем Traefik..."
+echo "🔄 Перезагрузка Traefik для подхвата сертификатов..."
 docker compose restart n8n-traefik
 
 ### 8. Telegram notify
 if [ ! -z "$TG_BOT_TOKEN" ]; then
   curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
     -d chat_id="${TG_USER_ID}" \
-    -d text="✅ Установка n8n v2+ завершена. Домен: https://${DOMAIN}"
+    -d text="✅ Установка n8n (1.121.2) завершена. Домен: https://${DOMAIN}"
 fi
 
 ### 9. Итог
