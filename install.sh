@@ -94,7 +94,10 @@ chmod 600 .env
 ### 5. Директории
 mkdir -p data logs backups letsencrypt shims traefik_dynamic
 touch logs/backup.log
-chmod 600 letsencrypt || true
+# Создаем файл для сертификатов заранее, чтобы не было ошибок прав
+touch letsencrypt/acme.json
+chmod 600 letsencrypt/acme.json
+
 
 ### 6. shims (как у тебя)
 cat > shims/ffmpeg <<'EOF'
