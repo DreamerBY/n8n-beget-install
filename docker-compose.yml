@@ -1,4 +1,4 @@
-version: "1"
+version: "3.8"
 
 services:
   n8n:
@@ -9,6 +9,9 @@ services:
         DOCKER_GID: ${DOCKER_GID:-999} 
     container_name: n8n-app
     restart: always
+    user: root
+    entrypoint: []
+    command: ["n8n"]
     ports:
       - "5678:5678"
 
@@ -48,6 +51,7 @@ services:
       - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-For=true"
       - "traefik.http.routers.n8n.middlewares=redirect@docker,n8n-headers"
+
   n8n-postgres:
     image: postgres:15-alpine
     container_name: n8n-postgres
@@ -73,16 +77,14 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
-      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=n8n-install_default" 
     ports:
       - "80:80"
       - "443:443"
