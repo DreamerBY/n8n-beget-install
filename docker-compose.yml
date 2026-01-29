@@ -67,7 +67,7 @@ services:
       - redis_data:/data
 
   n8n-traefik:
-    image: traefik:2.11
+    image: traefik:v2.11
     container_name: n8n-traefik
     restart: always
     command:
