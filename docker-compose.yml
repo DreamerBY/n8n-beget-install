@@ -6,11 +6,12 @@ services:
       context: .
       dockerfile: Dockerfile.n8n
       args:
-        DOCKER_GID: ${DOCKER_GID:-999}
+        DOCKER_GID: ${DOCKER_GID:-999} 
     container_name: n8n-app
     restart: always
-    user: root                        # <-- ВАЖНО: Решает проблемы прав доступа
-    command: /bin/sh -c "n8n"         # <-- ВАЖНО: Исправляет ошибку запуска "start not found"
+    user: root
+    entrypoint: []
+    command: ["n8n"]
     ports:
       - "5678:5678"
 
@@ -37,7 +38,7 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ./data:/data
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock 
     depends_on:
       - n8n-postgres
     labels:
@@ -76,7 +77,6 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
@@ -85,8 +85,8 @@ services:
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      # Если нужно отладить сертификаты, раскомментируй следующую строку:
-      # - "--log.level=DEBUG"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=n8n-install_default" 
     ports:
       - "80:80"
       - "443:443"
