@@ -1,4 +1,4 @@
-version: "1"
+version: "3.8"
 
 services:
   n8n:
@@ -6,9 +6,11 @@ services:
       context: .
       dockerfile: Dockerfile.n8n
       args:
-        DOCKER_GID: ${DOCKER_GID:-999} 
+        DOCKER_GID: ${DOCKER_GID:-999}
     container_name: n8n-app
     restart: always
+    user: root                        # <-- ВАЖНО: Решает проблемы прав доступа
+    command: /bin/sh -c "n8n"         # <-- ВАЖНО: Исправляет ошибку запуска "start not found"
     ports:
       - "5678:5678"
 
@@ -35,7 +37,7 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ./data:/data
-      - /var/run/docker.sock:/var/run/docker.sock 
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       - n8n-postgres
     labels:
@@ -48,6 +50,7 @@ services:
       - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
       - "traefik.http.middlewares.n8n-headers.headers.customrequestheaders.X-Forwarded-For=true"
       - "traefik.http.routers.n8n.middlewares=redirect@docker,n8n-headers"
+
   n8n-postgres:
     image: postgres:15-alpine
     container_name: n8n-postgres
@@ -73,6 +76,7 @@ services:
     command:
       - "--api.insecure=true"
       - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
@@ -81,8 +85,8 @@ services:
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=n8n-install_default" 
+      # Если нужно отладить сертификаты, раскомментируй следующую строку:
+      # - "--log.level=DEBUG"
     ports:
       - "80:80"
       - "443:443"
